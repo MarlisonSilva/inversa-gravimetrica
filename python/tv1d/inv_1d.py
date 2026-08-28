@@ -123,17 +123,52 @@ def inv_1d(anomObs, maxIter=400, flambda=0.001, usrTOL=0.0001,
 
 
 if __name__ == '__main__':
-    import scipy.io
+    import sys
     import os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-    # Load observed data from anomObs.mat (MATLAB format)
-    # Expected variable 'anomObs': shape (N, 2) — columns: [x, gz]
-    mat_path = os.path.join(os.path.dirname(__file__),
-                            '..', '..', 'TVGRAV1D', 'anomObs.mat')
-    mat = scipy.io.loadmat(mat_path)
-    anomObs = mat['anomObs'].astype(float)
+    from plotter import plot_inversion_comparison
 
-    # Parameters matching exemplo1.m from MATLAB
+    # ============================================================
+    # 1) Definir o MODELO VERDADEIRO (sintético) para comparação
+    # ============================================================
+    nprisms = 100
+    xminPrisms = 0.0
+    xmaxPrisms = 200.0
+    prismWidth = (xmaxPrisms - xminPrisms) / nprisms
+    prismDensity = -0.3
+    udist = 0  # 0 = km
+
+    # Modelo verdadeiro: bacia sedimentar tipo graben
+    # Profundidades em km (valores positivos para baixo)
+    model_true = np.zeros(nprisms)
+    for i in range(nprisms):
+        x = i * prismWidth + prismWidth / 2.0
+        if 20 <= x <= 60:
+            model_true[i] = 20.0   # bloco profundo esquerdo
+        elif 80 <= x <= 100:
+            model_true[i] = 10.0   # bloco raso central
+        elif 120 <= x <= 180:
+            model_true[i] = 30.0   # bloco profundo direito
+
+    # ============================================================
+    # 2) Gerar dados OBSERVADOS a partir do modelo verdadeiro
+    # ============================================================
+    XOBS = np.linspace(0, xmaxPrisms, 51)
+    grav_obs = functn(model_true, XOBS, xminPrisms, prismWidth,
+                      prismDensity, dcType=0, dcBeta=0.0, unit=udist)
+
+    # Adicionar ruído gaussiano (~5%)
+    noise_sigma = 1 / 80
+    noise = noise_sigma * np.random.randn(len(grav_obs))
+    grav_obs_noisy = grav_obs + grav_obs * noise
+
+    # anomObs no formato esperado: (N, 2) — [x, gz]
+    anomObs = np.column_stack([XOBS, grav_obs_noisy])
+
+    # ============================================================
+    # 3) Executar a INVERSÃO
+    # ============================================================
     P = inv_1d(
         anomObs,
         maxIter=400,
@@ -141,28 +176,34 @@ if __name__ == '__main__':
         usrTOL=0.0001,
         alpha=1.0,
         betaTV=0.001,
-        nprisms=100,
-        xminPrisms=0.0,
-        xmaxPrisms=200.0,
-        prismDensity=-0.3,
+        nprisms=nprisms,
+        xminPrisms=xminPrisms,
+        xmaxPrisms=xmaxPrisms,
+        prismDensity=prismDensity,
         dcType=0,
         dcBeta=0.0,
-        udist=0,
-        noise_sigma=1 / 80
+        udist=udist,
+        noise_sigma=0.0  # ruído já foi adicionado acima
     )
 
-    P_result = -1.0 * P  # Sign convention (as in exemplo1.m)
+    # ============================================================
+    # 4) Calcular a anomalia a partir do modelo invertido
+    # ============================================================
+    grav_calc = functn(P, XOBS, xminPrisms, prismWidth,
+                       prismDensity, dcType=0, dcBeta=0.0, unit=udist)
 
-    # Plot result
-    import matplotlib.pyplot as plt
-    x_prisms = np.linspace(0, 200, len(P_result))
-    plt.figure(figsize=(10, 4))
-    plt.step(x_prisms, P_result, where='post', color='r', linewidth=2)
-    plt.fill_between(x_prisms, P_result, step='post', color='red', alpha=0.3)
-    plt.gca().invert_yaxis()
-    plt.xlabel('Distance (km)')
-    plt.ylabel('Depth (km)')
-    plt.title('1D TV Gravity Inversion — Final Model')
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
+    # ============================================================
+    # 5) Plotar comparação: verdadeiro vs invertido
+    # ============================================================
+    x_prisms = np.arange(nprisms) * prismWidth
+
+    plot_inversion_comparison(
+        x_obs=XOBS,
+        grav_obs=grav_obs_noisy,
+        grav_calc=grav_calc,
+        x_prisms_true=x_prisms,
+        model_true=model_true,
+        x_prisms_inv=x_prisms,
+        model_inv=P,
+        title='Inversão Gravimétrica 1D — Variação Total'
+    )
