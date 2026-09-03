@@ -77,7 +77,6 @@ def QNiterate(nprisms, P, anomObs, YFIT, xminPrisms, prismWidth, prismDensity,
     nobs = len(XOBS)
 
     B = np.zeros(nterms)
-    idfp = 0  # 0 = use BFGS, 1 = use DFP
 
     # --- Compute gradient ---
     if it == 1:

@@ -129,6 +129,10 @@ if __name__ == '__main__':
 
     from plotter import plot_inversion_comparison
 
+    # Semente fixa: garante que o ruído — e portanto o modelo invertido —
+    # seja o mesmo a cada execução deste exemplo.
+    np.random.seed(7)
+
     # ============================================================
     # 1) Definir o MODELO VERDADEIRO (sintético) para comparação
     # ============================================================
