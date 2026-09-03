@@ -1,8 +1,10 @@
 from modGrav1dTOTAL import modGrav1dTOTAL
 
-def Mod2DGravim(m):
+def Mod2DGravim(m, unit=0):
     """
     Main script/function for 2D gravity modeling.
+
+    Distances are in kilometers, so the anomaly is returned in mGal.
     """
     nprisms = 60  # Number of prisms in the interpretation model.
     xminPrisms = 0  # Start of discretization along profile.
@@ -11,9 +13,9 @@ def Mod2DGravim(m):
     prismDensity = -0.25  # g/cm3! Density contrast of the prisms, the same for all prisms.
     nobs = 60  # Mudar se necessario
     xobs = list(range(1, 61))  # Equivalent to 1:60 in MATLAB (values 1 to 60)
-    
-    Dgrav = modGrav1dTOTAL(m, xobs, xminPrisms, prismWidth, prismDensity)
-    
+
+    Dgrav = modGrav1dTOTAL(m, xobs, xminPrisms, prismWidth, prismDensity, unit)
+
     return Dgrav
 
 if __name__ == '__main__':
