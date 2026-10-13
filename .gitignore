@@ -1,8 +1,9 @@
 venv/
 venv/*
 
-python/__pycache__/*
-python/*.pyc
+# caches do Python em qualquer pasta
+__pycache__/
+*.pyc
 
-python/*/__pycache__/*
-python/*/*.pyc
+# saida dos experimentos
+python/resultados/
